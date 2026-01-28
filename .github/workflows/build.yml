@@ -21,8 +21,8 @@ jobs:
     - name: Install Dependencies
       run: |
         pip install flet
-        # 暫時不安裝 pandas，確保先能打包成功
-        # 我們會修改 main.py 來處理沒有 pandas 的情況
+        # 安裝 flet 相關工具
+        pip install -U flet
 
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
@@ -32,14 +32,14 @@ jobs:
 
     - name: Build APK
       run: |
-        # 進入正確的目錄
         cd MyPythonProject
         
-        # 確保刪除之前的 build 資料夾 (如果有的話)
-        rm -rf build
-
-        # 開始打包，加上 -vv 看詳細資訊
-        flet build apk -vv --include-packages flet
+        # 關鍵修正：先明確初始化 flet 專案，避免打包時問問題
+        # 使用 --template app 建立標準結構
+        flet create . --template app --description "Money Tracker App" --org "com.example" --project "MoneyTracker" --no-interaction
+        
+        # 開始打包，加上 --verbose 看詳細
+        flet build apk --verbose
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
