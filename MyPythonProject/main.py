@@ -7,14 +7,14 @@ import shutil
 import csv
 
 # =================================================================
-# 核心邏輯 (純 Python 版，移除 Pandas)
+# 核心邏輯 (純 Python 版)
 # =================================================================
 
 class DataManager:
     def __init__(self):
         self.data_file = "account_log.csv"
         self.budget_file = "budget.json"
-        self.records = self.load_data()
+        self.df = self.load_data()
         self.budgets = self.load_budget()
 
     def load_data(self):
@@ -24,16 +24,18 @@ class DataManager:
                 with open(self.data_file, mode='r', encoding='utf-8-sig') as f:
                     reader = csv.DictReader(f)
                     for row in reader:
-                        # 處理日期格式
                         try:
                             d_str = row.get("日期", "")
-                            # 嘗試解析多種日期格式
+                            # 支援多種日期格式
                             try:
                                 d_obj = datetime.strptime(d_str, "%Y-%m-%d %H:%M:%S")
                             except:
-                                d_obj = datetime.strptime(d_str, "%Y-%m-%d")
+                                try:
+                                    d_obj = datetime.strptime(d_str, "%Y-%m-%d")
+                                except:
+                                    d_obj = datetime.now()
                         except:
-                            d_obj = datetime.now() # 格式錯誤就當作今天
+                            d_obj = datetime.now()
 
                         records.append({
                             "日期": d_obj,
@@ -52,7 +54,7 @@ class DataManager:
                 fieldnames = ["日期", "時間", "類別", "金額", "用途"]
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
-                for r in self.records:
+                for r in self.df:
                     writer.writerow({
                         "日期": r["日期"].strftime("%Y-%m-%d"),
                         "時間": r["時間"],
@@ -64,13 +66,12 @@ class DataManager:
             print(f"存檔錯誤: {e}")
 
     def add_record(self, date_val, time_val, category, money, usage):
-        try: 
-            # date_val 可能是字串或 datetime
+        try:
             if isinstance(date_val, str):
                 date_obj = datetime.strptime(date_val, "%Y-%m-%d")
             else:
                 date_obj = date_val
-        except: 
+        except:
             date_obj = datetime.now()
 
         new_record = {
@@ -80,7 +81,7 @@ class DataManager:
             "金額": money,
             "用途": usage
         }
-        self.records.append(new_record)
+        self.df.append(new_record)
         self.save_data()
 
     def filter_data(self, start_date=None, end_date=None, category="全部"):
@@ -91,14 +92,12 @@ class DataManager:
         except:
             sd = ed = None
 
-        for r in self.records:
+        for r in self.df:
             r_date = r["日期"]
-            # 日期篩選
             if sd and r_date < sd: continue
-            if ed and r_date > ed: continue
-            # 類別篩選
+            # 比較結束日期時，要包含當天，所以比較時只比日期部分
+            if ed and r_date.date() > ed.date(): continue
             if category != "全部" and r["類別"] != category: continue
-            
             filtered.append(r)
         
         # 排序 (新到舊)
@@ -127,13 +126,11 @@ class DataManager:
         return prev
         
     def get_monthly_summary(self, ym):
-        # 計算當月總支出 (純 Python 寫法)
         total = 0
-        for r in self.records:
+        for r in self.df:
             if r["類別"] == "支出":
                 try:
-                    r_ym = r["日期"].strftime("%Y-%m")
-                    if r_ym == ym:
+                    if r["日期"].strftime("%Y-%m") == ym:
                         total += r["金額"]
                 except: pass
         return total
@@ -167,7 +164,6 @@ def main(page: ft.Page):
     txt_date = ft.TextField(label="日期", value=datetime.now().strftime("%Y-%m-%d"), height=48, text_size=13, width=140)
     txt_time = ft.TextField(label="時間", value=datetime.now().strftime("%H:%M"), width=90, height=48, text_size=13)
     dd_type = ft.Dropdown(label="類型", options=[ft.dropdown.Option("支出"), ft.dropdown.Option("收入")], value="支出", width=120, height=48, text_size=13)
-    
     txt_amt = ft.TextField(label="金額 ($)", keyboard_type="number", height=55, text_size=18)
     txt_use = ft.TextField(label="用途說明", height=55, text_size=14)
     lbl_op_msg = ft.Text("", size=11)
@@ -191,13 +187,9 @@ def main(page: ft.Page):
     )
 
     def update_summary_card():
-        try: 
-            # 驗證日期格式
-            datetime.strptime(s_end.value, "%Y-%m-%d")
-            ym = datetime.strptime(s_end.value, "%Y-%m-%d").strftime("%Y-%m")
-        except: 
-            ym = datetime.now().strftime("%Y-%m")
-            
+        try: d = datetime.strptime(s_end.value, "%Y-%m-%d")
+        except: d = datetime.now()
+        ym = d.strftime("%Y-%m")
         b = dm.get_budget_for_month(ym); e = dm.get_monthly_summary(ym); r = b - e
         lbl_ym.value = f"📅 {ym}"
         lbl_budget.value = f"${b:,.0f}"; lbl_expense.value = f"${e:,.0f}"; lbl_remain.value = f"${r:,.0f}"
@@ -223,12 +215,10 @@ def main(page: ft.Page):
         data_list = dm.filter_data(s_start.value, s_end.value, "全部")
         table.rows.clear()
         budget_cache = {}
-        
         for r in data_list:
             c = "#D32F2F" if r["類別"]=="支出" else "#388E3C"
             ym = r["日期"].strftime("%Y-%m")
             if ym not in budget_cache: budget_cache[ym] = dm.get_budget_for_month(ym)
-            
             table.rows.append(ft.DataRow(cells=[
                 ft.DataCell(ft.Text(r["日期"].strftime("%m/%d"), size=11)),
                 ft.DataCell(ft.Text(r["類別"][0], size=11)),
@@ -240,8 +230,7 @@ def main(page: ft.Page):
 
     def save_bg(e):
         try:
-            v = float(txt_set_bg.value)
-            ym = datetime.strptime(s_end.value, "%Y-%m-%d").strftime("%Y-%m")
+            v = float(txt_set_bg.value); ym = datetime.strptime(s_end.value, "%Y-%m-%d").strftime("%Y-%m")
             dm.set_budget(ym, v); txt_set_bg.value = ""
             update_summary_card()
         except: pass
@@ -252,7 +241,6 @@ def main(page: ft.Page):
             shadow=ft.BoxShadow(blur_radius=5, color="#10000000"),
             content=ft.Column([
                 lbl_ym,
-                # 這裡不需要 Divider，直接用 spacing 控制
                 ft.Row([
                     ft.Column([ft.Text("預算", size=12, color="grey"), lbl_budget], spacing=2, horizontal_alignment="center"),
                     ft.Column([ft.Text("支出", size=12, color="grey"), lbl_expense], spacing=2, horizontal_alignment="center"),
