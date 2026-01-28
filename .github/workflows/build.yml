@@ -23,23 +23,22 @@ jobs:
         pip install flet
         pip install -U flet
 
+    # 這次我們安裝較新的 Flutter 版本，嘗試滿足 Flet 的需求
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.24.0'
+        flutter-version: '3.27.0' # 嘗試使用較新的穩定版
         channel: 'stable'
 
     - name: Build APK
       run: |
         cd MyPythonProject
-        
-        # 刪除可能導致衝突的設定檔
         rm -rf pubspec.yaml android ios build
         
-        # 使用 yes 指令，對所有詢問自動回答 "y"
-        # 這是 Linux 下解決互動式問答的終極手段
+        # 讓 yes 指令重複輸出 y，確保多次詢問都能回答
+        # 並使用 --no-input 參數 (如果支援的話)
         yes | flet build apk --verbose
-
+        
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
