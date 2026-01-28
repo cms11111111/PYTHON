@@ -23,20 +23,15 @@ jobs:
         pip install flet
         pip install -U flet
 
-    # 這次我們安裝較新的 Flutter 版本，嘗試滿足 Flet 的需求
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.27.0' # 嘗試使用較新的穩定版
-        channel: 'stable'
+    # 移除手動安裝 Flutter 的步驟
+    # 讓 Flet 自己去處理它想要的版本
 
     - name: Build APK
       run: |
         cd MyPythonProject
         rm -rf pubspec.yaml android ios build
         
-        # 讓 yes 指令重複輸出 y，確保多次詢問都能回答
-        # 並使用 --no-input 參數 (如果支援的話)
+        # 讓 yes 自動回答所有問題 (包括下載 Flutter 的詢問)
         yes | flet build apk --verbose
         
     - name: Upload Artifact
