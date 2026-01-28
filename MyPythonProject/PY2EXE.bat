@@ -1,0 +1,1 @@
+pyinstaller --onefile --windowed --hidden-import "pandas._libs.tslibs.timedeltas" --hidden-import "pandas._libs.tslibs.timestamps" --hidden-import "pandas._libs.interval" --hidden-import "tkcalendar" aa.py

@@ -1,0 +1,46 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Dependencies
+      run: |
+        pip install flet
+        # 這裡不安裝 requirements.txt 裡的 pandas，避免手機閃退
+        # 手機版我們會嘗試用簡易模式打包，若程式碼依賴 pandas 可能會報錯
+        # 但為了讓它先能跑起來，我們先裝必要的
+        pip install pandas openpyxl
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+
+    - name: Build APK
+      run: |
+        # 進入程式碼目錄
+        cd MyPythonProject
+        # 開始打包
+        flet build apk --verbose
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-app
+        path: MyPythonProject/build/apk/app-release.apk

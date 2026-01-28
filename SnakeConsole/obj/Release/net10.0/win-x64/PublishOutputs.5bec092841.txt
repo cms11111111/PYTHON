@@ -1,0 +1,2 @@
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\bin\Release\net10.0\win-x64\publish\SnakeConsole.pdb
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\bin\Release\net10.0\win-x64\publish\SnakeConsole.exe

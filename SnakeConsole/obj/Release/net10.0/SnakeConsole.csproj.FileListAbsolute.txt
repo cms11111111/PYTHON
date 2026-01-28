@@ -1,0 +1,14 @@
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\bin\Release\net10.0\SnakeConsole.exe
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\bin\Release\net10.0\SnakeConsole.deps.json
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\bin\Release\net10.0\SnakeConsole.runtimeconfig.json
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\bin\Release\net10.0\SnakeConsole.dll
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\bin\Release\net10.0\SnakeConsole.pdb
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\obj\Release\net10.0\SnakeConsole.GeneratedMSBuildEditorConfig.editorconfig
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\obj\Release\net10.0\SnakeConsole.AssemblyInfoInputs.cache
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\obj\Release\net10.0\SnakeConsole.AssemblyInfo.cs
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\obj\Release\net10.0\SnakeConsole.csproj.CoreCompileInputs.cache
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\obj\Release\net10.0\SnakeConsole.dll
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\obj\Release\net10.0\refint\SnakeConsole.dll
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\obj\Release\net10.0\SnakeConsole.pdb
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\obj\Release\net10.0\SnakeConsole.genruntimeconfig.cache
+D:\vscode\dotne10\demo\snakedemo\SnakeConsole\obj\Release\net10.0\ref\SnakeConsole.dll
