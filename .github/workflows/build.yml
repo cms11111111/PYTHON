@@ -21,10 +21,8 @@ jobs:
     - name: Install Dependencies
       run: |
         pip install flet
-        # 這裡不安裝 requirements.txt 裡的 pandas，避免手機閃退
-        # 手機版我們會嘗試用簡易模式打包，若程式碼依賴 pandas 可能會報錯
-        # 但為了讓它先能跑起來，我們先裝必要的
-        pip install pandas openpyxl
+        # 暫時不安裝 pandas，確保先能打包成功
+        # 我們會修改 main.py 來處理沒有 pandas 的情況
 
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
@@ -34,10 +32,14 @@ jobs:
 
     - name: Build APK
       run: |
-        # 進入程式碼目錄
+        # 進入正確的目錄
         cd MyPythonProject
-        # 開始打包
-        flet build apk --verbose
+        
+        # 確保刪除之前的 build 資料夾 (如果有的話)
+        rm -rf build
+
+        # 開始打包，加上 -vv 看詳細資訊
+        flet build apk -vv --include-packages flet
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4

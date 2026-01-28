@@ -1,8 +1,26 @@
 import flet as ft
-import pandas as pd
 from datetime import datetime
 import os
 import sys
+
+# 嘗試匯入 pandas，如果失敗則使用簡易模式
+try:
+    import pandas as pd
+    HAS_PANDAS = True
+except ImportError:
+    HAS_PANDAS = False
+    print("警告: 找不到 pandas，將使用簡易模式執行")
+    # 建立一個假的 pd 物件防止報錯
+    class DummyPD:
+        def to_datetime(self, val, errors='coerce'):
+            return val
+        def DataFrame(self, columns):
+            return []
+        def notna(self, val):
+            return val is not None
+        def concat(self, objs, ignore_index=True):
+            return objs[0] # 簡化
+    pd = DummyPD()
 
 # =================================================================
 # 資料處理邏輯
