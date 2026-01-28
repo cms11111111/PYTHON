@@ -21,7 +21,6 @@ jobs:
     - name: Install Dependencies
       run: |
         pip install flet
-        # 安裝 flet 相關工具
         pip install -U flet
 
     - name: Setup Flutter
@@ -34,12 +33,12 @@ jobs:
       run: |
         cd MyPythonProject
         
-        # 關鍵修正：先明確初始化 flet 專案，避免打包時問問題
-        # 使用 --template app 建立標準結構
-        flet create . --template app --description "Money Tracker App" --org "com.example" --project "MoneyTracker" --no-interaction
+        # 刪除可能導致衝突的設定檔
+        rm -rf pubspec.yaml android ios build
         
-        # 開始打包，加上 --verbose 看詳細
-        flet build apk --verbose
+        # 使用 yes 指令，對所有詢問自動回答 "y"
+        # 這是 Linux 下解決互動式問答的終極手段
+        yes | flet build apk --verbose
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
