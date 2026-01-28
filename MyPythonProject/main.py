@@ -3,60 +3,107 @@ from datetime import datetime
 import os
 import sys
 import json
-import shutil 
+import shutil
+import csv
 
 # =================================================================
-# 核心邏輯
+# 核心邏輯 (純 Python 版，移除 Pandas)
 # =================================================================
-
-try:
-    import pandas as pd
-    HAS_PANDAS = True
-except ImportError:
-    HAS_PANDAS = False
-    class DummyPD:
-        def to_datetime(self, val, errors='coerce'): return val
-        def DataFrame(self, columns): return []
-        def notna(self, val): return val is not None
-        def concat(self, objs, ignore_index=True): return objs[0]
-    pd = DummyPD()
 
 class DataManager:
     def __init__(self):
         self.data_file = "account_log.csv"
         self.budget_file = "budget.json"
-        self.df = self.load_data()
+        self.records = self.load_data()
         self.budgets = self.load_budget()
 
     def load_data(self):
-        if not HAS_PANDAS: return []
-        try:
-            df = pd.read_csv(self.data_file)
-            if "日期" in df.columns:
-                df["日期"] = pd.to_datetime(df["日期"], errors="coerce")
-            return df
-        except FileNotFoundError:
-            return pd.DataFrame(columns=["日期", "時間", "類別", "金額", "用途"])
+        records = []
+        if os.path.exists(self.data_file):
+            try:
+                with open(self.data_file, mode='r', encoding='utf-8-sig') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        # 處理日期格式
+                        try:
+                            d_str = row.get("日期", "")
+                            # 嘗試解析多種日期格式
+                            try:
+                                d_obj = datetime.strptime(d_str, "%Y-%m-%d %H:%M:%S")
+                            except:
+                                d_obj = datetime.strptime(d_str, "%Y-%m-%d")
+                        except:
+                            d_obj = datetime.now() # 格式錯誤就當作今天
+
+                        records.append({
+                            "日期": d_obj,
+                            "時間": row.get("時間", ""),
+                            "類別": row.get("類別", ""),
+                            "金額": float(row.get("金額", 0)),
+                            "用途": row.get("用途", "")
+                        })
+            except Exception as e:
+                print(f"讀取錯誤: {e}")
+        return records
 
     def save_data(self):
-        if not HAS_PANDAS: return
-        self.df.to_csv(self.data_file, index=False, encoding="utf-8-sig")
+        try:
+            with open(self.data_file, mode='w', encoding='utf-8-sig', newline='') as f:
+                fieldnames = ["日期", "時間", "類別", "金額", "用途"]
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                for r in self.records:
+                    writer.writerow({
+                        "日期": r["日期"].strftime("%Y-%m-%d"),
+                        "時間": r["時間"],
+                        "類別": r["類別"],
+                        "金額": r["金額"],
+                        "用途": r["用途"]
+                    })
+        except Exception as e:
+            print(f"存檔錯誤: {e}")
 
     def add_record(self, date_val, time_val, category, money, usage):
-        try: date_obj = pd.to_datetime(date_val)
-        except: date_obj = datetime.now()
-        new_record = {"日期": date_obj, "時間": time_val, "類別": category, "金額": money, "用途": usage}
-        self.df = pd.concat([self.df, pd.DataFrame([new_record])], ignore_index=True)
+        try: 
+            # date_val 可能是字串或 datetime
+            if isinstance(date_val, str):
+                date_obj = datetime.strptime(date_val, "%Y-%m-%d")
+            else:
+                date_obj = date_val
+        except: 
+            date_obj = datetime.now()
+
+        new_record = {
+            "日期": date_obj,
+            "時間": time_val,
+            "類別": category,
+            "金額": money,
+            "用途": usage
+        }
+        self.records.append(new_record)
         self.save_data()
 
     def filter_data(self, start_date=None, end_date=None, category="全部"):
-        df = self.df.copy().dropna(subset=['日期'])
+        filtered = []
         try:
-            if start_date: df = df[df['日期'] >= pd.to_datetime(start_date, errors='coerce')]
-            if end_date: df = df[df['日期'] <= pd.to_datetime(end_date, errors='coerce')]
-        except: pass
-        if category != "全部": df = df[df['類別'] == category]
-        return df
+            sd = datetime.strptime(start_date, "%Y-%m-%d") if start_date else None
+            ed = datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
+        except:
+            sd = ed = None
+
+        for r in self.records:
+            r_date = r["日期"]
+            # 日期篩選
+            if sd and r_date < sd: continue
+            if ed and r_date > ed: continue
+            # 類別篩選
+            if category != "全部" and r["類別"] != category: continue
+            
+            filtered.append(r)
+        
+        # 排序 (新到舊)
+        filtered.sort(key=lambda x: x["日期"], reverse=True)
+        return filtered
 
     def load_budget(self):
         try:
@@ -80,14 +127,16 @@ class DataManager:
         return prev
         
     def get_monthly_summary(self, ym):
-        try:
-            start = f"{ym}-01"
-            import calendar
-            last = calendar.monthrange(int(ym[:4]), int(ym[5:]))[1]
-            end = f"{ym}-{last}"
-            df = self.filter_data(start, end, "支出")
-            return df['金額'].sum() if not df.empty else 0
-        except: return 0
+        # 計算當月總支出 (純 Python 寫法)
+        total = 0
+        for r in self.records:
+            if r["類別"] == "支出":
+                try:
+                    r_ym = r["日期"].strftime("%Y-%m")
+                    if r_ym == ym:
+                        total += r["金額"]
+                except: pass
+        return total
 
 # =================================================================
 # Flet UI 介面
@@ -142,10 +191,15 @@ def main(page: ft.Page):
     )
 
     def update_summary_card():
-        try: d = pd.to_datetime(s_end.value, errors='coerce').strftime("%Y-%m")
-        except: d = datetime.now().strftime("%Y-%m")
-        b = dm.get_budget_for_month(d); e = dm.get_monthly_summary(d); r = b - e
-        lbl_ym.value = f"📅 {d}"
+        try: 
+            # 驗證日期格式
+            datetime.strptime(s_end.value, "%Y-%m-%d")
+            ym = datetime.strptime(s_end.value, "%Y-%m-%d").strftime("%Y-%m")
+        except: 
+            ym = datetime.now().strftime("%Y-%m")
+            
+        b = dm.get_budget_for_month(ym); e = dm.get_monthly_summary(ym); r = b - e
+        lbl_ym.value = f"📅 {ym}"
         lbl_budget.value = f"${b:,.0f}"; lbl_expense.value = f"${e:,.0f}"; lbl_remain.value = f"${r:,.0f}"
         lbl_remain.color = "#D32F2F" if r < 0 else "#388E3C"
         page.update()
@@ -166,14 +220,15 @@ def main(page: ft.Page):
         except: pass
 
     def do_search(e=None):
-        df = dm.filter_data(s_start.value, s_end.value, "全部")
-        if not df.empty: df = df.sort_values('日期', ascending=False)
+        data_list = dm.filter_data(s_start.value, s_end.value, "全部")
         table.rows.clear()
         budget_cache = {}
-        for _, r in df.iterrows():
+        
+        for r in data_list:
             c = "#D32F2F" if r["類別"]=="支出" else "#388E3C"
             ym = r["日期"].strftime("%Y-%m")
             if ym not in budget_cache: budget_cache[ym] = dm.get_budget_for_month(ym)
+            
             table.rows.append(ft.DataRow(cells=[
                 ft.DataCell(ft.Text(r["日期"].strftime("%m/%d"), size=11)),
                 ft.DataCell(ft.Text(r["類別"][0], size=11)),
@@ -185,7 +240,8 @@ def main(page: ft.Page):
 
     def save_bg(e):
         try:
-            v = float(txt_set_bg.value); ym = pd.to_datetime(s_end.value).strftime("%Y-%m")
+            v = float(txt_set_bg.value)
+            ym = datetime.strptime(s_end.value, "%Y-%m-%d").strftime("%Y-%m")
             dm.set_budget(ym, v); txt_set_bg.value = ""
             update_summary_card()
         except: pass
@@ -196,13 +252,13 @@ def main(page: ft.Page):
             shadow=ft.BoxShadow(blur_radius=5, color="#10000000"),
             content=ft.Column([
                 lbl_ym,
-                # 關鍵修改：移除 Divider 並設定 spacing=5 縮小空白
+                # 這裡不需要 Divider，直接用 spacing 控制
                 ft.Row([
                     ft.Column([ft.Text("預算", size=12, color="grey"), lbl_budget], spacing=2, horizontal_alignment="center"),
                     ft.Column([ft.Text("支出", size=12, color="grey"), lbl_expense], spacing=2, horizontal_alignment="center"),
                     ft.Column([ft.Text("剩餘", size=12, color="grey"), lbl_remain], spacing=2, horizontal_alignment="center"),
                 ], alignment="spaceAround") 
-            ], spacing=5) # 這裡設定 Column 的元件間距
+            ], spacing=5)
         )
 
     def view_add():
