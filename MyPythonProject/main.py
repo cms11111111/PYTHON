@@ -12,8 +12,16 @@ import csv
 
 class DataManager:
     def __init__(self):
-        self.data_file = "account_log.csv"
-        self.budget_file = "budget.json"
+        # 取得 Android 等行動裝置的可寫入路徑
+        # 如果是電腦 (None)，則使用當前目錄
+        storage_path = os.getenv("FLET_APP_STORAGE_DATA")
+        if storage_path:
+            self.data_file = os.path.join(storage_path, "account_log.csv")
+            self.budget_file = os.path.join(storage_path, "budget.json")
+        else:
+            self.data_file = "account_log.csv"
+            self.budget_file = "budget.json"
+            
         self.df = self.load_data()
         self.budgets = self.load_budget()
 
