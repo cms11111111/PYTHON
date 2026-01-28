@@ -20,19 +20,23 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        pip install flet
-        pip install -U flet
+        # 指定安裝舊版 Flet，避免新版強制檢查 Flutter 版本的囉唆問題
+        pip install flet==0.21.0
 
-    # 移除手動安裝 Flutter 的步驟
-    # 讓 Flet 自己去處理它想要的版本
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        # 配合舊版 Flet，使用當時的 Flutter 版本
+        flutter-version: '3.19.0'
+        channel: 'stable'
 
     - name: Build APK
       run: |
         cd MyPythonProject
         rm -rf pubspec.yaml android ios build
         
-        # 讓 yes 自動回答所有問題 (包括下載 Flutter 的詢問)
-        yes | flet build apk --verbose
+        # 舊版 Flet 的 build 指令比較單純
+        flet build apk --verbose
         
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
