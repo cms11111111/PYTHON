@@ -50,7 +50,7 @@ jobs:
       # 3. 開始打包 (這步會花比較久，約 15 分鐘)
       - name: Build with Buildozer
         run: |
-          buildozer android debug
+          yes | buildozer android debug
 
       # 4. 上傳打包好的 APK
       - name: Upload APK
