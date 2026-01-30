@@ -47,25 +47,31 @@ jobs:
         run: |
           pip3 install --upgrade buildozer cython virtualenv
 
-      # 2.5. 預先建立 Android SDK License 檔案 (修正 License 同意問題)
-      - name: Pre-accept Android SDK Licenses
+      # 2.5. 手動安裝 Android SDK (修正路徑錯誤)
+      - name: Setup Android SDK
         run: |
-          # 建立 Buildozer 預設的 SDK 路徑結構
-          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+          # 定義路徑
+          export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
+          mkdir -p $ANDROID_HOME/cmdline-tools
           
-          # 寫入常見的 License hash (這是 Google 的標準授權碼)
-          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          # 下載 Command Line Tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+          unzip -q cmdline-tools.zip
           
-          # 其他可能需要的 license
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+          # 關鍵步驟：移動到 latest 子目錄
+          mv cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          
+          # 接受授權
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          
+          # 安裝必要的 Build Tools 和 Platform
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
 
       # 3. 開始打包
       - name: Build with Buildozer
         run: |
-          # 仍然保留 yes | 以防萬一，但主要依賴上面的 license 檔
-          yes | buildozer android debug
+          export ANDROIDSDK=$HOME/.buildozer/android/platform/android-sdk
+          buildozer android debug
 
       # 4. 上傳打包好的 APK
       - name: Upload APK
