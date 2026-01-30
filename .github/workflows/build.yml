@@ -47,26 +47,25 @@ jobs:
         run: |
           pip3 install --upgrade buildozer cython virtualenv
 
-      # 2.5. 安裝並接受 Android SDK License (正規方法)
-      - name: Setup Android SDK & Accept Licenses
+      # 2.5. 預先建立 Android SDK License 檔案 (修正 License 同意問題)
+      - name: Pre-accept Android SDK Licenses
         run: |
-          # 建立必要的目錄
-          mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
+          # 建立 Buildozer 預設的 SDK 路徑結構
+          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
           
-          # 下載 Command Line Tools (對應 buildozer 預設版本)
-          wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O cmdline-tools.zip
-          unzip -q cmdline-tools.zip
+          # 寫入常見的 License hash (這是 Google 的標準授權碼)
+          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
           
-          # 移動到 buildozer 預期的路徑
-          mv cmdline-tools ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
-          
-          # 使用 sdkmanager 接受所有授權
-          yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+          # 其他可能需要的 license
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
 
       # 3. 開始打包
       - name: Build with Buildozer
         run: |
-          buildozer android debug
+          # 仍然保留 yes | 以防萬一，但主要依賴上面的 license 檔
+          yes | buildozer android debug
 
       # 4. 上傳打包好的 APK
       - name: Upload APK
