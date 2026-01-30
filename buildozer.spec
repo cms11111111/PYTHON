@@ -12,6 +12,13 @@ package.domain = org.test
 # (str) Source code where the main.py live
 source.dir = .
 
+# (str) Application versioning (method 1)
+version = 0.1
+
+# (str) Application versioning (method 2)
+# version.regex = __version__ = ['"](.*)['"]
+# version.filename = %(source.dir)s/main.py
+
 # (str) Source files to include (let empty to include all the files)
 source.include_exts = py,png,jpg,kv,atlas,json,csv
 
