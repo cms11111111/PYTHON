@@ -1,0 +1,20 @@
+1.PS D:\vscode\dotne10\demo\snakedemo> & C:/Users/USER/AppData/Local/Python/pythoncore-3.14-64/python.exe   │
+│   >>      d:/vscode/dotne10/demo/snakedemo/MyPythonProject/日常記錄_flet.py                                 │
+│   Python 3.14.2 (tags/v3.14.2:df79316, Dec  5 2025, 17:18:21) [MSC v.1944 64 bit (AMD64)] on win32          │
+│   Type "help", "copyright", "credits" or "license" for more information.                                    │
+│   Ctrl click to launch VS Code Native REPL                                                                  │
+│   我要幹麼? 
+2.PS D:\vscode\dotne10\demo\snakedemo> & C:/Users/USER/AppData/Local/Python/pythoncore-3.14-64/python.exe   │
+│   >>      d:/vscode/dotne10/demo/snakedemo/MyPythonProject/日常記錄_flet.py                                 │
+│   Python 3.14.2 (tags/v3.14.2:df79316, Dec  5 2025, 17:18:21) [MSC v.1944 64 bit (AMD64)] on win32          │
+│   Type "help", "copyright", "credits" or "license" for more information.                                    │
+│   Ctrl click to launch VS Code Native REPL                                                                  │
+│   一樣哦   
+3.The application encountered an error: module 'flet.controls.material.icons' has no attribute              │
+│   'CALENDAR_MONTH'
+4.The application encountered an error: module 'flet.controls.material.icons' has no attribute              │
+│   'CALENDAR_TODAY'
+5.The application encountered an error: Button.__init__() got an unexpected keyword argument 'text'
+6.The application encountered an error: module 'flet' has no attribute 'NavigationDestination'  
+7.The application encountered an error: module 'flet' has no attribute 'BarChartGroup'   
+8.IconButton must have either icon or a visible content specified.

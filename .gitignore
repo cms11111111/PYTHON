@@ -1,0 +1,8 @@
+# 排除超大檔案
+MyPythonProject/dist/
+bin/
+*.apk
+*.zip
+__pycache__/
+.vscode/
+*.pyc

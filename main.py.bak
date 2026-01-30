@@ -1,0 +1,246 @@
+from kivymd.app import MDApp
+from kivymd.uix.screen import MDScreen
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.button import MDRaisedButton, MDIconButton, MDRectangleFlatButton
+from kivymd.uix.textfield import MDTextField
+from kivymd.uix.label import MDLabel
+from kivymd.uix.pickers import MDDatePicker
+from kivymd.uix.datatables import MDDataTable
+from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
+from kivymd.uix.gridlayout import MDGridLayout
+from kivymd.uix.scrollview import MDScrollView
+from kivymd.uix.list import MDList, TwoLineAvatarIconListItem, IconLeftWidget, IconRightWidget
+from kivy.metrics import dp
+from kivy.core.window import Window
+import csv
+import os
+import json
+import shutil
+from datetime import datetime
+
+# --- 資料管理 (邏輯完全沿用) ---
+# Android 權限路徑處理
+try:
+    from android.storage import primary_external_storage_path
+    BACKUP_ROOT = os.path.join(primary_external_storage_path(), 'Download')
+except:
+    BACKUP_ROOT = os.path.abspath(".")
+
+DATA_FILE = 'daily_records.csv'
+CONFIG_FILE = 'budget_config.json'
+
+class DataManager:
+    def __init__(self):
+        self.init_db()
+
+    def init_db(self):
+        if not os.path.exists(DATA_FILE):
+            with open(DATA_FILE, 'w', newline='', encoding='utf-8') as f:
+                csv.writer(f).writerow(['日期', '時間', '類別', '金額', '用途'])
+
+    def add_record(self, date, category, amount, usage):
+        time_str = datetime.now().strftime('%H:%M')
+        with open(DATA_FILE, 'a', newline='', encoding='utf-8') as f:
+            csv.writer(f).writerow([date, time_str, category, amount, usage])
+
+    def get_records(self):
+        records = []
+        if os.path.exists(DATA_FILE):
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                reader = csv.reader(f)
+                next(reader, None)
+                for row in reader:
+                    if row: records.append(row)
+        return records
+
+    def delete_record(self, target_record):
+        records = self.get_records()
+        new_records = []
+        deleted = False
+        for row in records:
+            if not deleted and row == target_record:
+                deleted = True
+                continue
+            new_records.append(row)
+        
+        with open(DATA_FILE, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(['日期', '時間', '類別', '金額', '用途'])
+            writer.writerows(new_records)
+
+    def get_budget(self):
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, 'r') as f:
+                    return json.load(f).get('budget', 0)
+            except: return 0
+        return 0
+
+    def set_budget(self, amount):
+        with open(CONFIG_FILE, 'w') as f:
+            json.dump({'budget': int(amount)}, f)
+
+    def backup_data(self):
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        target = os.path.join(BACKUP_DIR, f'backup_{timestamp}.csv')
+        shutil.copy2(DATA_FILE, target)
+        return target
+
+# --- KivyMD 介面 ---
+class DailyTrackerApp(MDApp):
+    def build(self):
+        self.theme_cls.primary_palette = "Blue"
+        self.theme_cls.theme_style = "Light"
+        self.dm = DataManager()
+        
+        # 主屏幕
+        screen = MDScreen()
+        
+        # 底部導航
+        nav = MDBottomNavigation(selected_color_background="blue", text_color_active="lightgrey")
+        
+        # 分頁 1: 記帳
+        self.screen_add = MDBottomNavigationItem(name='screen_add', text='記帳', icon='pencil')
+        self.build_add_tab(self.screen_add)
+        nav.add_widget(self.screen_add)
+        
+        # 分頁 2: 查詢
+        self.screen_list = MDBottomNavigationItem(name='screen_list', text='查詢', icon='format-list-bulleted')
+        self.build_list_tab(self.screen_list)
+        self.screen_list.bind(on_tab_press=self.refresh_list) # 切換時刷新
+        nav.add_widget(self.screen_list)
+
+        screen.add_widget(nav)
+        return screen
+
+    def build_add_tab(self, screen):
+        layout = MDBoxLayout(orientation='vertical', padding=20, spacing=15)
+        
+        # 概況卡片 (簡單版)
+        self.lbl_summary = MDLabel(text="本月概況: 計算中...", halign="center", theme_text_color="Primary", font_style="H6")
+        layout.add_widget(self.lbl_summary)
+        
+        # 1. 日期
+        date_box = MDBoxLayout(orientation='horizontal', spacing=10, size_hint_y=None, height=dp(60))
+        self.txt_date = MDTextField(text=datetime.now().strftime('%Y-%m-%d'), hint_text="日期", mode="rectangle")
+        btn_date = MDIconButton(icon="calendar", on_release=self.show_date_picker)
+        date_box.add_widget(self.txt_date)
+        date_box.add_widget(btn_date)
+        layout.add_widget(date_box)
+
+        # 2. 金額
+        self.txt_amt = MDTextField(hint_text="金額", mode="rectangle", input_type="number")
+        self.txt_amt.bind(focus=self.on_amt_focus)
+        layout.add_widget(self.txt_amt)
+
+        # 3. 用途
+        self.txt_use = MDTextField(hint_text="用途", mode="rectangle")
+        self.txt_use.bind(focus=self.clear_status_msg)
+        layout.add_widget(self.txt_use)
+
+        # 4. 類別 (Grid 按鈕)
+        cat_grid = MDGridLayout(cols=3, spacing=10, size_hint_y=None, height=dp(120))
+        categories = ["餐飲", "交通", "購物", "娛樂", "醫療", "其他"]
+        self.cat_buttons = {}
+        for cat in categories:
+            btn = MDRectangleFlatButton(text=cat, size_hint=(1, None), on_release=lambda x, c=cat: self.select_category(c))
+            self.cat_buttons[cat] = btn
+            cat_grid.add_widget(btn)
+        layout.add_widget(cat_grid)
+        
+        # 儲存按鈕
+        btn_save = MDRaisedButton(text="儲存記錄", size_hint=(1, None), height=dp(50), on_release=self.save_record)
+        layout.add_widget(btn_save)
+        
+        # 推到頂部
+        layout.add_widget(MDLabel(size_hint_y=1))
+        
+        screen.add_widget(layout)
+        self.select_category("餐飲")
+        self.update_summary()
+
+    def build_list_tab(self, screen):
+        layout = MDBoxLayout(orientation='vertical')
+        
+        # 標題
+        layout.add_widget(MDLabel(text="歷史紀錄", halign="center", size_hint_y=None, height=dp(50), font_style="H6"))
+        
+        # 列表容器
+        scroll = MDScrollView()
+        self.md_list = MDList()
+        scroll.add_widget(self.md_list)
+        layout.add_widget(scroll)
+        
+        screen.add_widget(layout)
+
+    # --- 邏輯函數 ---
+    def show_date_picker(self, _):
+        date_dialog = MDDatePicker()
+        date_dialog.bind(on_save=self.on_date_save)
+        date_dialog.open()
+
+    def on_date_save(self, instance, value, date_range):
+        self.txt_date.text = str(value)
+
+    def select_category(self, cat):
+        self.selected_cat = cat
+        for c, btn in self.cat_buttons.items():
+            if c == cat:
+                btn.md_bg_color = self.theme_cls.primary_color
+                btn.text_color = (1, 1, 1, 1)
+            else:
+                btn.md_bg_color = (0, 0, 0, 0)
+                btn.text_color = self.theme_cls.primary_color
+        
+        # 填入用途
+        self.txt_use.text = cat
+        self.txt_use.text_color_normal = (0, 0, 0, 1)
+
+    def clear_status_msg(self, instance, value):
+        if value and "✅" in self.txt_use.text:
+            self.txt_use.text = ""
+
+    def on_amt_focus(self, instance, value):
+        if value: # 當獲得焦點
+            self.clear_status_msg(None, True)
+
+    def save_record(self, _):
+        if not self.txt_amt.text: return
+        
+        self.dm.add_record(self.txt_date.text, self.selected_cat, self.txt_amt.text, self.txt_use.text)
+        
+        # UI 更新
+        saved_use = self.txt_use.text
+        self.txt_amt.text = ""
+        self.txt_use.text = f"✅ 已存檔: {saved_use}"
+        self.update_summary()
+
+    def refresh_list(self, *args):
+        self.md_list.clear_widgets()
+        records = self.dm.get_records()
+        for row in reversed(records):
+            # row: date, time, cat, amt, use
+            item = TwoLineAvatarIconListItem(
+                text=f"{row[0]}  ${row[3]}",
+                secondary_text=f"{row[2]} - {row[4]}"
+            )
+            # 刪除按鈕
+            icon = IconRightWidget(icon="trash-can", on_release=lambda x, r=row: self.delete_item(r))
+            item.add_widget(icon)
+            self.md_list.add_widget(item)
+
+    def delete_item(self, row):
+        self.dm.delete_record(row)
+        self.refresh_list()
+        self.update_summary()
+
+    def update_summary(self):
+        budget = self.dm.get_budget()
+        # 簡單計算本月
+        records = self.dm.get_records()
+        month = datetime.now().strftime('%Y-%m')
+        spent = sum(int(float(r[3])) for r in records if r[0].startswith(month))
+        self.lbl_summary.text = f"本月支出: ${spent:,}"
+
+if __name__ == '__main__':
+    DailyTrackerApp().run()
