@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       # 1. 安裝 Buildozer 依賴
       - name: Install Buildozer dependencies
@@ -54,7 +54,7 @@ jobs:
 
       # 4. 上傳打包好的 APK
       - name: Upload APK
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: DailyTracker-APK
           path: bin/*.apk
