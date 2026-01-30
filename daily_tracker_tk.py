@@ -155,6 +155,13 @@ class BudgetApp:
         self.e_use.bind("<FocusIn>", self.clear_ok_msg)
         self.e_use.bind("<Button-1>", self.clear_ok_msg)
 
+        # 3.5 收支類型 (新增)
+        r_type = tk.Frame(f); r_type.pack(fill="x", pady=5)
+        tk.Label(r_type, text="類型:", font=("Arial", 12, "bold"), width=5, anchor="w").pack(side="left")
+        self.record_type = tk.StringVar(value="支出")
+        tk.Radiobutton(r_type, text="支出", variable=self.record_type, value="支出", font=("Arial", 11)).pack(side="left", padx=5)
+        tk.Radiobutton(r_type, text="收入", variable=self.record_type, value="收入", font=("Arial", 11)).pack(side="left", padx=5)
+
         # 4. 類別
         tk.Label(f, text="類別:", font=("Arial", 12, "bold")).pack(anchor="w", pady=(15,0))
         cat_fr = tk.Frame(f); cat_fr.pack(fill="x", pady=5)
@@ -184,8 +191,16 @@ class BudgetApp:
 
     def save_rec(self):
         d, c, a, u = self.e_date.get(), self.sel_cat.get(), self.e_amt.get(), self.e_use.get()
-        if not a.replace('.','').isdigit() or not a: return
-        self.dm.add_record(d, c, a, u)
+        if not a.replace('.','').isdigit() and not (a.startswith('-') and a[1:].replace('.','').isdigit()): return
+        
+        # 處理收支正負號
+        amount_val = float(a)
+        if self.record_type.get() == "支出":
+            amount_val = -abs(amount_val) # 強制轉負
+        else:
+            amount_val = abs(amount_val)  # 強制轉正
+            
+        self.dm.add_record(d, c, str(int(amount_val)), u) # 轉回字串存檔
         self.e_amt.delete(0, tk.END)
         self.e_use.delete(0, tk.END)
         self.e_use.insert(0, "儲存OK")
