@@ -61,6 +61,10 @@ jobs:
           # 關鍵步驟：移動到 latest 子目錄
           mv cmdline-tools $ANDROID_HOME/cmdline-tools/latest
           
+          # [修正] 建立 tools 目錄連結，欺騙 Buildozer
+          # Buildozer 舊邏輯會找 tools/bin/sdkmanager
+          cp -r $ANDROID_HOME/cmdline-tools/latest $ANDROID_HOME/tools
+          
           # 接受授權
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
           
