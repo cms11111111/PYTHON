@@ -47,10 +47,26 @@ jobs:
         run: |
           pip3 install --upgrade buildozer cython virtualenv
 
-      # 3. 開始打包 (這步會花比較久，約 15 分鐘)
+      # 2.5. 安裝並接受 Android SDK License (正規方法)
+      - name: Setup Android SDK & Accept Licenses
+        run: |
+          # 建立必要的目錄
+          mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
+          
+          # 下載 Command Line Tools (對應 buildozer 預設版本)
+          wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O cmdline-tools.zip
+          unzip -q cmdline-tools.zip
+          
+          # 移動到 buildozer 預期的路徑
+          mv cmdline-tools ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
+          
+          # 使用 sdkmanager 接受所有授權
+          yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+
+      # 3. 開始打包
       - name: Build with Buildozer
         run: |
-          yes | buildozer android debug
+          buildozer android debug
 
       # 4. 上傳打包好的 APK
       - name: Upload APK
