@@ -20,11 +20,11 @@ version = 0.1
 # version.filename = %(source.dir)s/main.py
 
 # (str) Source files to include (let empty to include all the files)
-source.include_exts = py,png,jpg,kv,atlas,json,csv
+source.include_exts = py,png,jpg,kv,atlas,json,csv,ttf,ttc
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.3.0
+requirements = python3,kivy==2.3.0,cython
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
