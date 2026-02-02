@@ -45,7 +45,7 @@ jobs:
       # 2. 安裝 Buildozer
       - name: Install Buildozer
         run: |
-          pip3 install --upgrade buildozer cython virtualenv
+          pip3 install --upgrade buildozer "cython==0.29.36" virtualenv
 
       # 2.5. 手動安裝 Android SDK (修正路徑錯誤)
       - name: Setup Android SDK
