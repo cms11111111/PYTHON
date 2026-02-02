@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. 安裝 Buildozer 依賴
+      # 1. 安裝 Buildozer 依賴 (精簡版，避開 SDL2 污染，但保留必要工具)
       - name: Install Buildozer dependencies
         run: |
           sudo apt-get update
@@ -29,14 +29,21 @@ jobs:
             libtool \
             pkg-config \
             zlib1g-dev \
-            openjdk-17-jdk \
+            libltdl-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libtinfo5 \
+            cmake \
             zip \
-            unzip
+            unzip \
+            openjdk-17-jdk
 
-      # 2. 安裝 Buildozer
+      # 2. 安裝 Buildozer (強制鎖定 Cython 版本)
       - name: Install Buildozer
         run: |
           pip3 install --upgrade buildozer "cython==0.29.36" virtualenv
+          # 清理舊的 buildozer 目錄以防萬一
+          rm -rf .buildozer
 
       # 2.5. 手動安裝 Android SDK (修正路徑錯誤)
       - name: Setup Android SDK
