@@ -24,7 +24,11 @@ source.include_exts = py,png,jpg,kv,atlas,json,csv,ttf,ttc
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.3.0,cython==0.29.36
+requirements = python3,kivy==2.3.0,cython,pyjnius
+
+# (str) python-for-android branch to use, if not master, useful to try
+# a specific branch
+p4a.branch = master
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
